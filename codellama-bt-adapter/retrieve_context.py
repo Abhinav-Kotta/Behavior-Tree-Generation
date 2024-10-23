@@ -24,12 +24,10 @@ def retrieve_similar_content(query, index_name, top_k=5):
 # Example usage
 if __name__ == "__main__":
     # Input query text
-    query_text = "What is the protocol to manage troops in warfare"
+    print("What behavior tree do you want to generate: ")
+    query_text = input()
     
     # Get similar content
     result = retrieve_similar_content(query_text, "pdf-rag-index")
 
-    # Print results
-    print("Top Similar Results:")
-    for match in result['matches']:
-        print(f"Score: {match['score']}, Metadata: {match['metadata']}")
+    # Use result in LLM query as context here
