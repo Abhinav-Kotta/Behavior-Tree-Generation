@@ -1,8 +1,12 @@
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize Pinecone with your API key
-pc = Pinecone(api_key="0982dc21-beca-4acf-b89d-febd5a7a8ef1")
+pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY'))
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def get_text_embedding(text_query):

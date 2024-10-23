@@ -1,6 +1,10 @@
 import pdfplumber
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_path):
@@ -55,7 +59,7 @@ def add_pdf_to_pinecone(pdf_path, pinecone_api_key, pinecone_index_name):
 
 # Define your variables
 pdf_path = 'tank.pdf'  # Path to your PDF file
-pinecone_api_key = '0982dc21-beca-4acf-b89d-febd5a7a8ef1'  # Your Pinecone API key
+pinecone_api_key = os.getenv('PINECONE_API_KEY')  # Your Pinecone API key
 pinecone_index_name = 'pdf-rag-index'  # Name of your Pinecone index
 
 # Run the function to add the PDF to Pinecone
