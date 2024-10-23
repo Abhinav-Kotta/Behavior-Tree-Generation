@@ -114,6 +114,36 @@ def generate_and_save_response(
     save_to_file(output_content, output_file)
     return response
 
+def initialize_model(base_model_path, lora_adapter_path):
+    """Initialize the model and tokenizer with LoRA adapter"""
+    print("Loading model...")
+    model = AutoModelForCausalLM.from_pretrained(
+        base_model_path,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        device_map="auto" if torch.cuda.is_available() else None,
+        trust_remote_code=True
+    )
+    
+    print("Loading tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(
+        base_model_path,
+        trust_remote_code=True
+    )
+    tokenizer.pad_token = tokenizer.eos_token
+    
+    print("Loading LoRA adapter...")
+    model = PeftModel.from_pretrained(
+        model,
+        lora_adapter_path,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+    )
+    
+    if torch.cuda.is_available():
+        model.half()
+    
+    model.eval()
+    return model, tokenizer
+
 if __name__ == "__main__":
     BASE_MODEL_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/models--codellama--CodeLlama-7b-Instruct-hf/snapshots/22cb240e0292b0b5ab4c17ccd97aa3a2f799cbed"
     LORA_ADAPTER_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/codellama-bt-adapter"
@@ -123,32 +153,7 @@ if __name__ == "__main__":
     OUTPUT_FILE = f"{OUTPUT_DIR}/generation_output_{timestamp}.txt"
     
     try:
-        print("Loading model...")
-        model = AutoModelForCausalLM.from_pretrained(
-            BASE_MODEL_PATH,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-            device_map="auto" if torch.cuda.is_available() else None,
-            trust_remote_code=True
-        )
-        
-        print("Loading tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained(
-            BASE_MODEL_PATH,
-            trust_remote_code=True
-        )
-        tokenizer.pad_token = tokenizer.eos_token
-        
-        print("Loading LoRA adapter...")
-        model = PeftModel.from_pretrained(
-            model,
-            LORA_ADAPTER_PATH,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-        )
-        
-        if torch.cuda.is_available():
-            model.half()
-        
-        model.eval()
+        model, tokenizer = initialize_model(BASE_MODEL_PATH, LORA_ADAPTER_PATH)
         
         # Save model loading information
         model_info = f"""

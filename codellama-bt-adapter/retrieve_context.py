@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 
 # Initialize Pinecone with your API key
-pc = Pinecone(api_key="lol")
+pc = Pinecone(api_key="0982dc21-beca-4acf-b89d-febd5a7a8ef1")
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def get_text_embedding(text_query):

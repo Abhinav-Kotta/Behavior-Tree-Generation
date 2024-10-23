@@ -55,7 +55,7 @@ def add_pdf_to_pinecone(pdf_path, pinecone_api_key, pinecone_index_name):
 
 # Define your variables
 pdf_path = 'tank.pdf'  # Path to your PDF file
-pinecone_api_key = 'lol'  # Your Pinecone API key
+pinecone_api_key = '0982dc21-beca-4acf-b89d-febd5a7a8ef1'  # Your Pinecone API key
 pinecone_index_name = 'pdf-rag-index'  # Name of your Pinecone index
 
 # Run the function to add the PDF to Pinecone
