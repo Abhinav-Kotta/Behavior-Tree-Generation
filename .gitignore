@@ -2,3 +2,4 @@ outputs/
 models--codellama--CodeLlama-7b-Instruct-hf/
 .env
 prompts.txt
+behavior_trees/
