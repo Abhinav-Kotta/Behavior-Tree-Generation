@@ -116,8 +116,8 @@ def run_demo(input_file=None, output_dir=None):
     load_dotenv()
 
     # Configuration
-    BASE_MODEL_PATH = os.getenv('BASE_MODEL_PATH', '../models/codellama/CodeLlama-7b-Instruct-hf')
-    LORA_ADAPTER_PATH = os.getenv('LORA_ADAPTER_PATH', './codellama-bt-adapter')
+    BASE_MODEL_PATH = os.getenv('BASE_MODEL_PATH')
+    LORA_ADAPTER_PATH = os.getenv('LORA_ADAPTER_PATH')
     OUTPUT_DIR = output_dir or "outputs"
     
     try:
