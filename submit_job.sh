@@ -53,35 +53,36 @@ submit_job() {
     fi
     
     echo "Creating necessary directories on remote server..."
-    $SSH_CMD "mkdir -p ${REMOTE_DIR}/runs"
+    $SSH_CMD "mkdir -p ${REMOTE_DIR}"
     
     echo "Copying files to remote server..."
     # Copy the Slurm script
     $SCP_CMD run_model.slurm ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
     # Copy the scenarios file
-    $SCP_CMD "$SCENARIOS_FILE" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/scenarios.json
+    $SCP_CMD "$SCENARIOS_FILE" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
     # Copy Python scripts if they exist locally
-    for script in demo_ssh.py retrieve_context.py upsert_document.py; do
+    for script in demo_ssh.py retrieve_context.py; do
         if [ -f "$script" ]; then
-            $SCP_CMD "$script" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+            $SCP_CMD "$script" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/codellama-bt-adapter/
         fi
     done
     # Copy .env file if needed
     if [ -f ".env" ]; then
-        $SCP_CMD .env ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+        $SCP_CMD .env ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/codellama-bt-adapter/
     fi
     
     echo "Submitting SLURM job..."
-    JOB_ID=$($SSH_CMD "cd ${REMOTE_DIR} && sbatch run_model.slurm")
+    SLURM_RESPONSE=$($SSH_CMD "cd ${REMOTE_DIR} && sbatch run_model.slurm")
+    JOB_ID=$(echo $SLURM_RESPONSE | grep -oP "Submitted batch job \K\d+")
     
-    if [ $? -eq 0 ]; then
+    if [ ! -z "$JOB_ID" ]; then
         echo "Job submitted successfully: $JOB_ID"
         
         # Wait for job completion
         echo "Waiting for job completion..."
         while true; do
             sleep 30
-            JOB_STATE=$($SSH_CMD "squeue -j ${JOB_ID##* } -h -o %t" 2>/dev/null)
+            JOB_STATE=$($SSH_CMD "squeue -j ${JOB_ID} -h -o %t" 2>/dev/null)
             if [ -z "$JOB_STATE" ]; then
                 break
             fi
@@ -89,14 +90,33 @@ submit_job() {
         done
         
         # Create local output directory
-        mkdir -p "$OUTPUT_DIR"
+        mkdir -p "$OUTPUT_DIR"/{xml,metadata}
         
-        # Copy results back
         echo "Copying results back to local machine..."
-        $SCP_CMD -r ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/runs/*/xml/* "$OUTPUT_DIR/"
-        $SCP_CMD -r ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/runs/*/metadata/* "$OUTPUT_DIR/"
+        # The correct path should include codellama-bt-adapter and the specific job ID
+        REMOTE_RESULTS_DIR="${REMOTE_DIR}/codellama-bt-adapter/runs/${JOB_ID}"
         
-        echo "✅ Job completed and results copied to $OUTPUT_DIR"
+        # Copy XML files
+        echo "Copying XML files..."
+        $SCP_CMD -r "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_RESULTS_DIR}/outputs/xml/*" "$OUTPUT_DIR/xml/" || {
+            echo "⚠️  Warning: No XML files found"
+        }
+        
+        # Copy metadata files
+        echo "Copying metadata files..."
+        $SCP_CMD -r "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_RESULTS_DIR}/outputs/metadata/*" "$OUTPUT_DIR/metadata/" || {
+            echo "⚠️  Warning: No metadata files found"
+        }
+        
+        # Copy logs
+        echo "Copying logs..."
+        $SCP_CMD -r "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_RESULTS_DIR}/logs" "$OUTPUT_DIR/" || {
+            echo "⚠️  Warning: No logs found"
+        }
+        
+        echo "✅ Job completed. Results copied to $OUTPUT_DIR"
+        echo "Generated files:"
+        ls -R "$OUTPUT_DIR"
     else
         echo "❌ Failed to submit job"
         exit 1
