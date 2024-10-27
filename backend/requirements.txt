@@ -1,0 +1,9 @@
+flask
+flask-cors
+torch
+transformers
+peft
+sentence-transformers
+pinecone-client
+python-dotenv
+pdfplumber

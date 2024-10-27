@@ -1,2 +1,3 @@
 outputs/
 models--codellama--CodeLlama-7b-Instruct-hf/
+.env
