@@ -14,6 +14,7 @@ set -e
 # Define base directory (where the script is located)
 export BASE_DIR="/lustre/fs1/home/akotta/Behavior-Tree-Generation"
 export SCRIPT_DIR="${BASE_DIR}/codellama-bt-adapter"
+export SCENARIOS_FILE="${BASE_DIR}/scenarios.json"  # Path to scenarios.json in parent directory
 
 # Define custom output directory and create necessary subdirectories
 export RUN_DIR="${SCRIPT_DIR}/runs/${SLURM_JOB_ID}"
@@ -61,6 +62,7 @@ log_message "JobID: ${SLURM_JOB_ID}"
 log_message "Running on ${SLURM_NODELIST}"
 log_message "Base directory: ${BASE_DIR}"
 log_message "Script directory: ${SCRIPT_DIR}"
+log_message "Scenarios file: ${SCENARIOS_FILE}"
 
 # Load required modules
 log_message "Loading modules..."
@@ -106,12 +108,12 @@ disown $GPU_MONITOR_PID
 
 # Run the main script
 log_message "=== Starting Main Script ==="
-if [ -f "prompts.txt" ]; then
-    log_message "Running demo_ssh.py in batch mode with prompts.txt"
-    python3 demo_ssh.py prompts.txt 2>&1 | tee -a "${DEBUG_LOG}"
+if [ -f "${SCENARIOS_FILE}" ]; then
+    log_message "Running demo_ssh.py with scenarios.json"
+    python3 demo_ssh.py "${SCENARIOS_FILE}" "${RUN_DIR}/outputs" 2>&1 | tee -a "${DEBUG_LOG}"
 else
-    log_message "No prompts.txt found, running demo_ssh.py in interactive mode"
-    python3 demo_ssh.py 2>&1 | tee -a "${DEBUG_LOG}"
+    log_message "Error: scenarios.json not found at ${SCENARIOS_FILE}"
+    exit 1
 fi
 
 # Log completion

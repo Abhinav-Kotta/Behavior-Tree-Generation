@@ -68,10 +68,12 @@ def extract_xml_from_response(response):
             start_idx = response.find('<root')
             
         if start_idx == -1:
+            logger.warning("No XML tags found in response")
             return response  # Return original if no XML found
             
         end_idx = response.rfind('>')
         if end_idx == -1:
+            logger.warning("No closing tag found in response")
             return response
             
         xml_content = response[start_idx:end_idx+1]
@@ -80,8 +82,11 @@ def extract_xml_from_response(response):
         try:
             dom = xml.dom.minidom.parseString(xml_content)
             pretty_xml = dom.toprettyxml(indent="  ")
+            # Remove blank lines
+            pretty_xml = '\n'.join([line for line in pretty_xml.split('\n') if line.strip()])
             return pretty_xml
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to format XML: {str(e)}")
             return xml_content
             
     except Exception as e:
@@ -100,6 +105,8 @@ def generate_behavior_tree(
 ):
     """Generate a behavior tree and save as XML"""
     try:
+        logger.info(f"Generating behavior tree for scenario: {scenario_name}")
+        
         # Get context from Pinecone
         results = retrieve_similar_content(prompt, "pdf-rag-index", top_k=3)
         
@@ -115,7 +122,9 @@ def generate_behavior_tree(
         {context}
 
         Generate a behavior tree in XML format for the following scenario:
-        {prompt} [/INST]"""
+        {prompt}
+        
+        The output should be a valid XML behavior tree. [/INST]"""
         
         # Generate response
         inputs = tokenizer(enhanced_prompt, return_tensors="pt").to(model.device)
@@ -150,6 +159,7 @@ def generate_behavior_tree(
             "scenario": scenario_name,
             "prompt": prompt,
             "context_chunks": len(results.matches),
+            "context_used": context[:500] + "..." if len(context) > 500 else context,  # Save truncated context
             "generation_params": {
                 "max_new_tokens": max_new_tokens,
                 "temperature": temperature,
@@ -176,8 +186,16 @@ def process_scenarios(scenarios_file, output_dir):
     
     try:
         # Load scenarios
+        logger.info(f"Loading scenarios from {scenarios_file}")
         with open(scenarios_file, 'r') as f:
-            scenarios = json.load(f)
+            data = json.load(f)
+            scenarios = data.get('scenarios', [])  # Expect scenarios under 'scenarios' key
+            
+        if not scenarios:
+            logger.error("No scenarios found in input file")
+            return []
+            
+        logger.info(f"Found {len(scenarios)} scenarios to process")
             
         # Initialize model
         model, tokenizer = initialize_model(
@@ -192,14 +210,15 @@ def process_scenarios(scenarios_file, output_dir):
         
         # Process each scenario
         generated_files = []
-        for scenario in scenarios:
-            name = scenario.get('name', 'unnamed_scenario')
+        for i, scenario in enumerate(scenarios, 1):
+            name = scenario.get('name', f'scenario_{i}')
             prompt = scenario.get('prompt', '')
             
             if not prompt:
                 logger.warning(f"Skipping scenario '{name}': no prompt provided")
                 continue
                 
+            logger.info(f"Processing scenario {i}/{len(scenarios)}: {name}")
             try:
                 xml_path = generate_behavior_tree(
                     model,
@@ -209,11 +228,13 @@ def process_scenarios(scenarios_file, output_dir):
                     output_dir
                 )
                 generated_files.append(xml_path)
+                logger.info(f"Successfully processed scenario {name}")
                 
             except Exception as e:
                 logger.error(f"Error processing scenario '{name}': {str(e)}")
                 continue
         
+        logger.info(f"Completed processing {len(generated_files)} out of {len(scenarios)} scenarios")
         return generated_files
         
     except Exception as e:
@@ -230,4 +251,15 @@ if __name__ == "__main__":
     scenarios_file = sys.argv[1]
     output_dir = sys.argv[2]
     
-    process_scenarios(scenarios_file, output_dir)
+    if not os.path.exists(scenarios_file):
+        print(f"Error: Scenarios file '{scenarios_file}' not found")
+        sys.exit(1)
+        
+    try:
+        generated_files = process_scenarios(scenarios_file, output_dir)
+        print(f"\nGenerated {len(generated_files)} behavior trees:")
+        for file in generated_files:
+            print(f"- {file}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1)
