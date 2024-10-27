@@ -12,6 +12,7 @@
 export BASE_MODEL_PATH="../models/codellama/CodeLlama-7b-Instruct-hf"
 export LORA_ADAPTER_PATH="./codellama-bt-adapter"
 export OUTPUT_DIR="outputs"
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
 # Create job-specific directory
 mkdir -p $SLURM_JOB_ID
@@ -48,61 +49,13 @@ nvidia-smi >> $debug_logs
 echo "Memory limits:" >> $benchmark_logs
 ulimit -a >> $benchmark_logs
 
-# Function to run model operations
-run_model_operation() {
-    local operation=$1
-    local prompt_file=$2
-    local output_file=$3
-    
-    echo "Running operation: $operation" >> $debug_logs
-    date >> $benchmark_logs
-    
-    case $operation in
-        "init")
-            ./run_model.sh init
-            ;;
-        "generate")
-            ./run_model.sh generate "$prompt_file" "$output_file"
-            ;;
-        "gpu-status")
-            ./run_model.sh gpu-status
-            ;;
-        *)
-            echo "Unknown operation: $operation" >> $debug_logs
-            exit 1
-            ;;
-    esac
-    
-    date >> $benchmark_logs
-}
-
-# Ensure scripts are executable
-chmod +x run_model.sh
-
-# Initialize model and check GPU
-echo "Checking GPU status..." >> $debug_logs
-run_model_operation "gpu-status"
-
-echo "Initializing model..." >> $debug_logs
-run_model_operation "init"
-
-# Process input prompts if provided
+# Run demo.py with the prompts file if it exists
 if [ -f "prompts.txt" ]; then
-    echo "Processing prompts from file..." >> $debug_logs
-    mkdir -p "${OUTPUT_DIR}/batch_${SLURM_JOB_ID}"
-    
-    while IFS= read -r prompt || [ -n "$prompt" ]; do
-        timestamp=$(date +%Y%m%d_%H%M%S)
-        prompt_file="${OUTPUT_DIR}/batch_${SLURM_JOB_ID}/prompt_${timestamp}.txt"
-        output_file="${OUTPUT_DIR}/batch_${SLURM_JOB_ID}/response_${timestamp}.json"
-        
-        echo "$prompt" > "$prompt_file"
-        echo "Processing prompt: $prompt" >> $debug_logs
-        
-        run_model_operation "generate" "$prompt_file" "$output_file"
-    done < "prompts.txt"
+    echo "Running demo.py in batch mode with prompts.txt" >> $debug_logs
+    python3 demo_ssh.py prompts.txt >> $debug_logs 2>&1
 else
-    echo "No prompts.txt file found" >> $debug_logs
+    echo "No prompts.txt found, running demo.py in interactive mode" >> $debug_logs
+    python3 demo_ssh.py >> $debug_logs 2>&1
 fi
 
 # Collect GPU usage statistics
