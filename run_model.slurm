@@ -20,7 +20,7 @@ export RUN_DIR="${SCRIPT_DIR}/runs/${SLURM_JOB_ID}"
 mkdir -p "${RUN_DIR}"/{logs,outputs}
 
 # Set environment variables
-export BASE_MODEL_PATH="${BASE_DIR}/models/codellama/CodeLlama-7b-Instruct-hf"
+export BASE_MODEL_PATH="${BASE_DIR}/models/codellama/models--codellama--CodeLlama-7b-Instruct-hf/snapshots/22cb240e0292b0b5ab4c17ccd97aa3a2f799cbed"
 export LORA_ADAPTER_PATH="${SCRIPT_DIR}/codellama-bt-adapter"
 export OUTPUT_DIR="${RUN_DIR}/outputs"
 export PYTHONPATH="${PYTHONPATH}:${SCRIPT_DIR}"
