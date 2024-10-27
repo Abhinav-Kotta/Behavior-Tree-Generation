@@ -3,6 +3,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel, PeftConfig
 import datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def save_to_file(content, filename, mode='a'):
     """
@@ -145,8 +148,8 @@ def initialize_model(base_model_path, lora_adapter_path):
     return model, tokenizer
 
 if __name__ == "__main__":
-    BASE_MODEL_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/models--codellama--CodeLlama-7b-Instruct-hf/snapshots/22cb240e0292b0b5ab4c17ccd97aa3a2f799cbed"
-    LORA_ADAPTER_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/codellama-bt-adapter"
+    BASE_MODEL_PATH = os.getenv('BASE_MODEL_PATH')
+    LORA_ADAPTER_PATH = os.getenv('LORA_ADAPTER_PATH')
     
     OUTPUT_DIR = "outputs"
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
