@@ -42,8 +42,8 @@ def initialize_model(base_model_path, lora_adapter_path):
 
 def run_demo():
     # Configuration
-    BASE_MODEL_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/models--codellama--CodeLlama-7b-Instruct-hf/snapshots/22cb240e0292b0b5ab4c17ccd97aa3a2f799cbed"
-    LORA_ADAPTER_PATH = "/lustre/fs1/home/akotta/Behavior-Tree-Generation/codellama-bt-adapter"
+    BASE_MODEL_PATH = os.getenv('BASE_MODEL_PATH')
+    LORA_ADAPTER_PATH = os.getenv('LORA_ADAPTER_PATH')
     PINECONE_INDEX = "pdf-rag-index"
     OUTPUT_DIR = "outputs"
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

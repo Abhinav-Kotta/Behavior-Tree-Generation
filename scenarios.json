@@ -1,0 +1,16 @@
+{
+    "scenarios": [
+      {
+        "name": "tank_patrol",
+        "prompt": "Create a behavior tree for a tank patrol mission that includes reconnaissance, threat assessment, and engagement protocols"
+      },
+      {
+        "name": "infantry_defense",
+        "prompt": "Generate a behavior tree for an infantry squad defending a strategic position with multiple entry points"
+      },
+      {
+        "name": "air_support",
+        "prompt": "Create a behavior tree for an air support unit providing cover for ground forces during an operation"
+      }
+    ]
+  }
