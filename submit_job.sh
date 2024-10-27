@@ -15,6 +15,21 @@ if [ -z "$REMOTE_HOST" ] || [ -z "$REMOTE_USER" ] || [ -z "$SSH_KEY_PATH" ] || [
     exit 1
 fi
 
+# Check for scenarios file
+if [ -z "$1" ]; then
+    echo "Error: No scenarios file provided"
+    echo "Usage: $0 scenarios.json [output_dir]"
+    exit 1
+fi
+
+SCENARIOS_FILE="$1"
+OUTPUT_DIR="${2:-behavior_trees}"
+
+if [ ! -f "$SCENARIOS_FILE" ]; then
+    echo "Error: Scenarios file '$SCENARIOS_FILE' not found"
+    exit 1
+fi
+
 # SSH commands
 SSH_CMD="ssh -i $SSH_KEY_PATH ${REMOTE_USER}@${REMOTE_HOST}"
 SCP_CMD="scp -i $SSH_KEY_PATH"
@@ -43,21 +58,49 @@ submit_job() {
     echo "Copying files to remote server..."
     # Copy the Slurm script
     $SCP_CMD run_model.slurm ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
-    # Copy demo_ssh.py if it exists locally
-    if [ -f "demo_ssh.py" ]; then
-        $SCP_CMD demo_ssh.py ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
-    fi
-    # Copy prompts.txt if it exists
-    if [ -f "prompts.txt" ]; then
-        $SCP_CMD prompts.txt ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
-    fi
+    # Copy the scenarios file
+    $SCP_CMD "$SCENARIOS_FILE" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/scenarios.json
+    # Copy Python scripts if they exist locally
+    for script in demo_ssh.py retrieve_context.py upsert_document.py; do
+        if [ -f "$script" ]; then
+            $SCP_CMD "$script" ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+        fi
+    done
     # Copy .env file if needed
     if [ -f ".env" ]; then
         $SCP_CMD .env ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
     fi
     
     echo "Submitting SLURM job..."
-    $SSH_CMD "cd ${REMOTE_DIR} && sbatch run_model.slurm"
+    JOB_ID=$($SSH_CMD "cd ${REMOTE_DIR} && sbatch run_model.slurm")
+    
+    if [ $? -eq 0 ]; then
+        echo "Job submitted successfully: $JOB_ID"
+        
+        # Wait for job completion
+        echo "Waiting for job completion..."
+        while true; do
+            sleep 30
+            JOB_STATE=$($SSH_CMD "squeue -j ${JOB_ID##* } -h -o %t" 2>/dev/null)
+            if [ -z "$JOB_STATE" ]; then
+                break
+            fi
+            echo "Job state: $JOB_STATE"
+        done
+        
+        # Create local output directory
+        mkdir -p "$OUTPUT_DIR"
+        
+        # Copy results back
+        echo "Copying results back to local machine..."
+        $SCP_CMD -r ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/runs/*/xml/* "$OUTPUT_DIR/"
+        $SCP_CMD -r ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/runs/*/metadata/* "$OUTPUT_DIR/"
+        
+        echo "✅ Job completed and results copied to $OUTPUT_DIR"
+    else
+        echo "❌ Failed to submit job"
+        exit 1
+    fi
 }
 
 # Parse command line argument
@@ -66,13 +109,12 @@ case "$1" in
         verify_ssh_connection
         exit
         ;;
-    "")
+    *.json)
         submit_job
         ;;
     *)
-        echo "Usage: $0 [-v|--verify]"
-        echo "  -v, --verify    Verify SSH connection only"
-        echo "  (no flag)       Submit SLURM job"
+        echo "Usage: $0 scenarios.json [output_dir]"
+        echo "  or: $0 [-v|--verify]"
         exit 1
         ;;
 esac
