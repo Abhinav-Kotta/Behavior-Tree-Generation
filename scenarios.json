@@ -1,8 +1,8 @@
 {
   "scenarios": [
     {
-      "name": "bob",
-      "prompt": "military scenario behavior tree"
+      "name": "tank_patrol",
+      "prompt": "Create a behavior tree for a tank patrol mission that includes reconnaissance, threat assessment, and engagement protocols"
     }
   ]
 }
