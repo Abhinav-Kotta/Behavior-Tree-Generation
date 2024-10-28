@@ -1,8 +1,8 @@
 {
   "scenarios": [
     {
-      "name": "cool ",
-      "prompt": "thing"
+      "name": "bob",
+      "prompt": "military scenario behavior tree"
     }
   ]
 }
