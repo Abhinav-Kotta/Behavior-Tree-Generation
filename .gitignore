@@ -4,3 +4,5 @@ models--codellama--CodeLlama-7b-Instruct-hf/
 prompts.txt
 behavior_trees/
 __pycache__/
+frontend/
+codellama-bt-adapter/info
