@@ -14,6 +14,12 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text()
     return text
 
+# Function to extract text from .h files
+def extract_text_from_header(header_path):
+    with open(header_path, 'r') as file:
+        text = file.read()
+    return text
+
 # Function to chunk the extracted text
 def chunk_text(text, chunk_size=500):
     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
@@ -57,6 +63,20 @@ def add_pdf_to_pinecone(pdf_path, pinecone_api_key, pinecone_index_name):
     upsert_embeddings(index, embeddings, chunks)
     print(f"Successfully added {len(chunks)} chunks from the PDF to Pinecone.")
 
+# Main function to add header files to pinecone
+def add_file_to_pinecone(file_path, pinecone_api_key, pinecone_index_name, file_type="header"):
+    if file_type == "header":
+        extracted_text = extract_text_from_header(file_path)
+    else:
+        extracted_text = extract_text_from_pdf(file_path)
+        
+    chunks = chunk_text(extracted_text)
+    embeddings = embed_chunks(chunks)
+    index = init_pinecone(pinecone_api_key, pinecone_index_name)
+    upsert_embeddings(index, embeddings, chunks)
+    print(f"Successfully added {len(chunks)} chunks from {file_path} to Pinecone.")
+
+
 # Define your variables
 pdf_path = 'tank.pdf'  # Path to your PDF file
 pinecone_api_key = os.getenv('PINECONE_API_KEY')  # Your Pinecone API key
@@ -64,3 +84,11 @@ pinecone_index_name = 'pdf-rag-index'  # Name of your Pinecone index
 
 # Run the function to add the PDF to Pinecone
 add_pdf_to_pinecone(pdf_path, pinecone_api_key, pinecone_index_name)
+
+
+# (Example) Load all header files from EntityAI module
+# Load all header files
+header_dir = "header_files/EntityAI"
+for filename in os.listdir(header_dir):
+    file_path = os.path.join(header_dir, filename)
+    add_file_to_pinecone(file_path, pinecone_api_key, pinecone_index_name, file_type="header")
