@@ -25,9 +25,9 @@ Follow these steps to set up the project:
     REMOTE_HOST=newton.ist.ucf.edu
     REMOTE_USER=
     SSH_KEY_PATH=
-    REMOTE_DIR=
+    REMOTE_DIR= # create a directory in Newton for the files to copy over
 
-    BASE_MODEL_PATH=# This should contain the path to the directory within the snapshots folder
+    BASE_MODEL_PATH= # This should contain the path to the directory within the snapshots folder
     LORA_ADAPTER_PATH=codellama-bt-adapter
     ```
 5. Run the shell script to submit the job to Newton:
