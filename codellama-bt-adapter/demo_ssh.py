@@ -116,15 +116,86 @@ def generate_behavior_tree(
             if hasattr(match, 'metadata') and 'text' in match.metadata
         ])
         
+        node_types = json.stringify( {
+        "formationFiles": {
+          "AssembleFormationTask.h": "Manages the process of assembling units into specified formations",
+          "CreateFormationTask.h": "Handles creation and initialization of new unit formations",
+          "DeleteFormationTask.h": "Controls cleanup and removal of formations"
+        },
+        "movementFiles": {
+          "SelectNextRouteSegmentTask.h": "Controls progression through waypoints",
+          "NotifyRouteCompletedTask.h": "Handles route completion notifications",
+          "IssueBoundingOverwatchTask.h": "Coordinates bounding overwatch movement",
+          "IssueMovementOrdersTask.h": "Manages movement order distribution",
+          "IssueUnitMoveTacOrderTask.h": "Handles tactical movement orders"
+        },
+        "combatFiles": {
+          "IssueAttackOrdersTask.h": "Manages attack order distribution",
+          "IssueDefendPositionOrdersTask.h": "Handles defensive position orders",
+          "UnitAssignTargetsTask.h": "Controls target assignments",
+          "UnitCanEngageTargetCondition.h": "Evaluates engagement capabilities",
+          "UnitCombatPowerCondition.h": "Assesses relative combat strength"
+        },
+        "evaluatorFiles": {
+          "UnitEnemySituationEvaluator.h": "Assesses enemy situations",
+          "UnitHealthStateTreeEvaluator.h": "Monitors unit health status",
+          "UnitHierarchyEvaluator.h": "Manages unit organization"
+        },
+        "tacticalFiles": {
+          "IssueSubunitFindCoverTask.h": "Coordinates finding cover positions",
+          "IssueSubunitOccupyCoverTask.h": "Manages occupying cover positions",
+          "FindEngagementLocationTask.h": "Determines optimal engagement positions",
+          "CancelSubOrdersTask.h": "Manages order cancellation"
+        },
+        "perceptionFiles": {
+            "EntitySensedEntitiesComponent.h": "Manages individual entity sensory information",
+            "EntitySightModeComponent.h": "Controls entity vision and detection capabilities",
+            "EntityVisibilityComponent.h": "Handles entity visibility states and checks"
+        },
+        "movementFiles": {
+            "EntityMovementComponent.h": "Controls individual entity movement",
+            "EntityPathfindingComponent.h": "Manages pathfinding for individual entities",
+            "EntityNavigationComponent.h": "Handles navigation and obstacle avoidance"
+        },
+        "combatFiles": {
+            "EntityCombatComponent.h": "Manages individual combat capabilities",
+            "EntityWeaponComponent.h": "Controls weapon systems and firing",
+            "EntityTargetingComponent.h": "Handles target acquisition and tracking"
+        },
+        "healthFiles": {
+            "EntityHealthComponent.h": "Tracks entity health and damage",
+            "EntityStatusComponent.h": "Monitors entity status conditions",
+            "EntityVitalityComponent.h": "Manages stamina and other vital stats"
+        },
+        "behaviorFiles": {
+            "EntityBehaviorTreeComponent.h": "Controls individual AI decision making",
+            "EntityStateComponent.h": "Manages entity state machines",
+            "EntityTaskComponent.h": "Handles individual task execution"
+        },
+        "communicationFiles": {
+            "EntityMessageComponent.h": "Manages entity communication",
+            "EntitySignalComponent.h": "Handles signals and alerts",
+            "EntityCommandComponent.h": "Processes received commands"
+        }
+      })
+
         # Create enhanced prompt
-        enhanced_prompt = f"""[INST] Using the following context about military behavior trees:
+        enhanced_prompt = f"""[INST] 
+        
+        Use the following node types in the creation of the tree. Look at the node names and the corresponding description when determining what actions to make: 
+
+        {node_types}
+        
+        Using the following context about military behavior trees:
 
         {context}
 
         Generate a behavior tree in XML format for the following scenario:
         {prompt}
         
-        The output should be a valid XML behavior tree. [/INST]"""
+        The output should be a valid XML behavior tree. 
+        
+        [/INST]"""
         
         # Generate response
         inputs = tokenizer(enhanced_prompt, return_tensors="pt").to(model.device)

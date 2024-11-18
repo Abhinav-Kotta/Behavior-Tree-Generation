@@ -2,57 +2,7 @@
   "scenarios": [
     {
       "name": "tank_patrol",
-      "prompt": {
-        "situation": "Create a behavior tree for a tank patrol mission that includes reconnaissance, threat assessment, and engagement protocols. The tank platoon is tasked with patrolling a designated area, ensuring no enemy presence, assessing potential threats, and engaging as necessary. The area consists of open terrain with limited natural cover, and the platoon must be on high alert for enemy vehicles and infantry. Follow the steps below to structure the behavior tree:\n\n- Scenario Description: The mission context involves a tank platoon conducting a security patrol across open terrain, checking for enemy forces, and engaging when necessary. The terrain has minimal cover, and threats are anticipated from the north and east sectors.\n\n- Unit Type and Composition: The unit is a Tank Platoon consisting of 4 Main Battle Tanks and 1 Command Tank with enhanced communication equipment.\n\n- Mission Objectives: The primary goal is to conduct a 24-hour patrol and secure the area by assessing and neutralizing any enemy threats.\n\n- Known Threats and Conditions: Enemy forces (2-3 vehicles, possible infantry with anti-tank weapons) are expected in the vicinity, with potential reinforcements coming from a nearby base. Environmental conditions include open terrain, limited cover, and visibility issues due to fog at night.\n\n- Specific Constraints and Requirements: The unit must avoid civilian areas, conserve fuel, and maintain communication with command while staying within the designated patrol boundaries.\n\n- Operations Phases: Initial Setup, Movement Requirements, Combat Actions, Coordination Needs",
-        "Specific node subcategories pertaining to units": {
-          "formationFiles": {
-            "AssembleFormationTask.h": "Manages the process of assembling units into specified formations and positions, including validation and execution of formation orders",
-            "CreateFormationTask.h": "Handles creation and initialization of new unit formations, including formation selection and hierarchy setup",
-            "DeleteFormationTask.h": "Controls the cleanup and removal of formations, including proper dismantling of formation structures"
-          },
-          "movementFiles": {
-            "SelectNextRouteSegmentTask.h": "Controls progression through waypoints along a defined route, managing route segments",
-            "NotifyRouteCompletedTask.h": "Handles notifications when units complete their assigned routes, including parent unit notifications",
-            "IssueBoundingOverwatchTask.h": "Coordinates alternating movement between two units for tactical advancement using bounding overwatch technique",
-            "IssueMovementOrdersTask.h": "Manages creation and distribution of basic movement orders to units and subunits",
-            "IssueUnitMoveTacOrderTask.h": "Specializes in tactical movement orders for specific units, including formation maintenance"
-          },
-          "combatFiles": {
-            "IssueAttackOrdersTask.h": "Handles creation and distribution of attack orders, including coordination between units",
-            "IssueDefendPositionOrdersTask.h": "Manages defensive position orders and coordination of unit defensive arrangements",
-            "UnitAssignTargetsTask.h": "Controls the distribution of target assignments among unit members based on tactical priorities",
-            "UnitCanEngageTargetCondition.h": "Evaluates whether units can effectively engage specific targets based on range and capabilities",
-            "UnitCombatPowerCondition.h": "Assesses relative combat strength between friendly and enemy forces"
-          },
-          "evaluatorFiles": {
-            "UnitEnemySituationEvaluator.h": "Continuously assesses enemy presence, threat levels, and tactical situation",
-            "UnitHealthStateTreeEvaluator.h": "Monitors unit health, combat effectiveness, and overall unit status",
-            "UnitHierarchyEvaluator.h": "Manages and evaluates unit organizational structure and command relationships"
-          },
-          "eventFiles": {
-            "SignalUnitEnemySpottedEvent.h": "Manages the propagation of enemy detection notifications through the unit hierarchy",
-            "UnitChangedEvent.h": "Handles events related to changes in unit composition or structure",
-            "UnitMemberDestroyedEvent.h": "Processes events related to unit member casualties and their impact on the unit"
-          },
-          "tacticalFiles": {
-            "IssueSubunitFindCoverTask.h": "Coordinates subunits in searching for and evaluating potential cover positions",
-            "IssueSubunitOccupyCoverTask.h": "Manages the process of units moving to and occupying identified cover positions",
-            "FindEngagementLocationTask.h": "Determines optimal positions for unit engagement based on tactical considerations",
-            "CancelSubOrdersTask.h": "Manages the cancellation and cleanup of existing orders for subunits"
-          },
-          "conditionFiles": {
-            "CheckTrueLeaderKilledCondition.h": "Evaluates and responds to the loss of unit leadership",
-            "CheckUnitPlatformCondition.h": "Verifies unit type, capabilities, and platform-specific requirements",
-            "MovementTechniqueCompareCondition.h": "Compares and evaluates different movement techniques for tactical situations"
-          },
-          "coordinationFiles": {
-            "WaitForAllUnitOrderCompletionTask.h": "Synchronizes completion of multiple unit orders before proceeding",
-            "WaitForBoundingOverwatchCompletion.h": "Coordinates the completion of bounding overwatch movement between units",
-            "RemoveDeadEntitiesTask.h": "Manages the removal and accounting of casualties from unit formations",
-            "IssueHaltFRAGOTask.h": "Handles immediate order changes and emergency stops for units"
-          }
-        }
-      }
+      "prompt": "Create a behavior tree for a tank patrol mission that includes reconnaissance, threat assessment, and engagement protocols. The tank platoon is tasked with patrolling a designated area, ensuring no enemy presence, assessing potential threats, and engaging as necessary. The area consists of open terrain with limited natural cover, and the platoon must be on high alert for enemy vehicles and infantry. Follow the steps below to structure the behavior tree:\\n\\n- Scenario Description: The mission context involves a tank platoon conducting a security patrol across open terrain, checking for enemy forces, and engaging when necessary. The terrain has minimal cover, and threats are anticipated from the north and east sectors.\\n\\n- Unit Type and Composition: The unit is a Tank Platoon consisting of 4 Main Battle Tanks and 1 Command Tank with enhanced communication equipment.\\n\\n- Mission Objectives: The primary goal is to conduct a 24-hour patrol and secure the area by assessing and neutralizing any enemy threats.\\n\\n- Known Threats and Conditions: Enemy forces (2-3 vehicles, possible infantry with anti-tank weapons) are expected in the vicinity, with potential reinforcements coming from a nearby base. Environmental conditions include open terrain, limited cover, and visibility issues due to fog at night.\\n\\n- Specific Constraints and Requirements: The unit must avoid civilian areas, conserve fuel, and maintain communication with command while staying within the designated patrol boundaries.\\n\\n- Operations Phases: Initial Setup, Movement Requirements, Combat Actions, Coordination Needs"
     }
   ]
 }
