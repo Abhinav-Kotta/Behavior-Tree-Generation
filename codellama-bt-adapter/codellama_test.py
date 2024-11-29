@@ -9,7 +9,12 @@ load_dotenv()
 
 def save_to_file(content, filename, mode='a'):
     """
-    Save content to a file, creating directory if it doesn't exist
+    Saves test output content to a file with directory creation.
+
+    Args:
+        content (str): Content to be written
+        filename (str): Output file path
+        mode (str): File opening mode
     """
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     
@@ -17,7 +22,17 @@ def save_to_file(content, filename, mode='a'):
         f.write(content + '\n')
 
 def verify_lora_adapters(model, tokenizer, output_file):
-    """Verify that LoRA adapters are properly loaded and active"""
+    """
+    Tests LoRA adapter integration by comparing outputs with and without adapters.
+
+    Args:
+        model: CodeLlama model instance
+        tokenizer: Model tokenizer
+        output_file (str): Path for verification results
+
+    Returns:
+        bool: Success status of verification
+    """
     
     verification_info = "\n=== LoRA Adapter Verification ===\n"
     
@@ -85,6 +100,21 @@ def generate_and_save_response(
     temperature=0.7,
     top_p=0.95,
 ):
+    """
+    Generates and logs test responses using the CodeLlama model.
+
+    Args:
+        model: CodeLlama model instance
+        tokenizer: Model tokenizer
+        prompt (str): Test prompt
+        output_file (str): Output log path
+        max_new_tokens (int): Token generation limit
+        temperature (float): Generation temperature
+        top_p (float): Nucleus sampling parameter
+
+    Returns:
+        str: Generated response
+    """
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
@@ -118,7 +148,16 @@ def generate_and_save_response(
     return response
 
 def initialize_model(base_model_path, lora_adapter_path):
-    """Initialize the model and tokenizer with LoRA adapter"""
+    """
+    Sets up CodeLlama model with LoRA adapters for testing.
+
+    Args:
+        base_model_path (str): CodeLlama model path
+        lora_adapter_path (str): LoRA adapter path
+
+    Returns:
+        tuple: (model, tokenizer) Initialized testing setup
+    """
     print("Loading model...")
     model = AutoModelForCausalLM.from_pretrained(
         base_model_path,
