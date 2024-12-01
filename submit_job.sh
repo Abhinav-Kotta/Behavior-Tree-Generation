@@ -1,6 +1,19 @@
 #!/bin/bash
+# Executive Summary:
+# 
+# This script is designed to facilitate the submission of jobs to a remote server for the generation of behavior trees. 
+# It leverages SSH and SCP commands to manage the connection, copy necessary files, and submit the job. 
+# 
+# The script also includes functionality to:
+# 
+# - Verify the SSH connection
+# - Wait for job completion
+# - Copy the results back to the local machine
+# 
+# It is intended to be used in conjunction with the Behavior Tree Viewer application for generating and managing behavior trees.
 
 # Load environment variables from .env file
+# This section loads environment variables from a .env file if it exists.
 if [ -f .env ]; then
     export $(cat .env | grep -v '#' | xargs)
 else
@@ -9,6 +22,7 @@ else
 fi
 
 # Required environment variables check
+# This section checks if all required environment variables are set in the .env file.
 if [ -z "$REMOTE_HOST" ] || [ -z "$REMOTE_USER" ] || [ -z "$SSH_KEY_PATH" ] || [ -z "$REMOTE_DIR" ]; then
     echo "Error: Required environment variables not set in .env file"
     echo "Please ensure REMOTE_HOST, REMOTE_USER, SSH_KEY_PATH, and REMOTE_DIR are set"
@@ -16,25 +30,32 @@ if [ -z "$REMOTE_HOST" ] || [ -z "$REMOTE_USER" ] || [ -z "$SSH_KEY_PATH" ] || [
 fi
 
 # Check for scenarios file
+# This section checks if a scenarios file is provided as a command line argument.
 if [ -z "$1" ]; then
     echo "Error: No scenarios file provided"
     echo "Usage: $0 scenarios.json [output_dir]"
     exit 1
 fi
 
+# Set scenarios file and output directory
+# This section sets the scenarios file and output directory based on command line arguments.
 SCENARIOS_FILE="$1"
 OUTPUT_DIR="${2:-behavior_trees}"
 
+# Check if scenarios file exists
+# This section checks if the provided scenarios file exists.
 if [ ! -f "$SCENARIOS_FILE" ]; then
     echo "Error: Scenarios file '$SCENARIOS_FILE' not found"
     exit 1
 fi
 
 # SSH commands
+# This section sets up SSH and SCP commands for remote operations.
 SSH_CMD="ssh -i $SSH_KEY_PATH ${REMOTE_USER}@${REMOTE_HOST}"
 SCP_CMD="scp -i $SSH_KEY_PATH"
 
 # Function to verify SSH connection
+# This function verifies the SSH connection to the remote server.
 verify_ssh_connection() {
     echo "Verifying SSH connection to ${REMOTE_HOST}..."
     if $SSH_CMD "echo 'SSH connection successful' && exit" >/dev/null 2>&1; then
@@ -47,6 +68,7 @@ verify_ssh_connection() {
 }
 
 # Function to submit job
+# This function submits a job to the remote server for behavior tree generation.
 submit_job() {
     if ! verify_ssh_connection; then
         exit 1
@@ -124,6 +146,7 @@ submit_job() {
 }
 
 # Parse command line argument
+# This section parses the command line argument to determine the action to take.
 case "$1" in
     -v|--verify)
         verify_ssh_connection
