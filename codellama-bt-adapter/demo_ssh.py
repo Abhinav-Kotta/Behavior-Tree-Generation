@@ -1,3 +1,29 @@
+DEFAULT_MESSAGES = [
+    {
+        "role": "system", 
+        "content": "You are an AI assistant specialized in creating military behavior trees."
+    },
+    {
+        "role": "user",
+        "content": """Use the following node types in the creation of the tree:
+{node_types}
+
+Context about military behavior trees:
+{context}
+
+Generate a behavior tree in XML format for:
+{prompt}
+
+The output should be a valid XML behavior tree."""
+    }
+]
+
+def format_chat_prompt(messages):
+    system_msg = messages[0]['content']
+    user_msg = messages[1]['content']
+    return f"<s>[INST] <<SYS>>\n{system_msg}\n<</SYS>>\n\n{user_msg} [/INST]"
+
+# demo_ssh.py
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -10,28 +36,18 @@ from dotenv import load_dotenv
 import xml.dom.minidom
 import json
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def initialize_model(base_model_path, lora_adapter_path):
-    """Initialize the model and tokenizer with LoRA adapter"""
     try:
         logger.info(f"CUDA available: {torch.cuda.is_available()}")
         if torch.cuda.is_available():
             logger.info(f"GPU Device: {torch.cuda.get_device_name(0)}")
         
-        logger.info("Loading tokenizer...")
-        tokenizer = AutoTokenizer.from_pretrained(
-            base_model_path,
-            trust_remote_code=True
-        )
+        tokenizer = AutoTokenizer.from_pretrained(base_model_path, trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
         
-        logger.info("Loading model...")
         model = AutoModelForCausalLM.from_pretrained(
             base_model_path,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -39,7 +55,6 @@ def initialize_model(base_model_path, lora_adapter_path):
             trust_remote_code=True
         )
         
-        logger.info("Loading LoRA adapter...")
         model = PeftModel.from_pretrained(
             model,
             lora_adapter_path,
@@ -50,7 +65,6 @@ def initialize_model(base_model_path, lora_adapter_path):
             model.half()
         
         model.eval()
-        logger.info("Model initialization complete")
         return model, tokenizer
 
     except Exception as e:
@@ -58,9 +72,7 @@ def initialize_model(base_model_path, lora_adapter_path):
         raise
 
 def extract_xml_from_response(response):
-    """Extract and format XML content from the model's response"""
     try:
-        # Find XML content between tags if present
         start_idx = response.find('<?xml')
         if start_idx == -1:
             start_idx = response.find('<behavior')
@@ -69,7 +81,7 @@ def extract_xml_from_response(response):
             
         if start_idx == -1:
             logger.warning("No XML tags found in response")
-            return response  # Return original if no XML found
+            return response
             
         end_idx = response.rfind('>')
         if end_idx == -1:
@@ -78,13 +90,10 @@ def extract_xml_from_response(response):
             
         xml_content = response[start_idx:end_idx+1]
         
-        # Try to format XML
         try:
             dom = xml.dom.minidom.parseString(xml_content)
             pretty_xml = dom.toprettyxml(indent="  ")
-            # Remove blank lines
-            pretty_xml = '\n'.join([line for line in pretty_xml.split('\n') if line.strip()])
-            return pretty_xml
+            return '\n'.join([line for line in pretty_xml.split('\n') if line.strip()])
         except Exception as e:
             logger.warning(f"Failed to format XML: {str(e)}")
             return xml_content
@@ -93,23 +102,11 @@ def extract_xml_from_response(response):
         logger.error(f"Error extracting XML: {str(e)}")
         return response
 
-def generate_behavior_tree(
-    model,
-    tokenizer,
-    prompt,
-    scenario_name,
-    output_dir,
-    max_new_tokens=512,
-    temperature=0.7,
-    top_p=0.95,
-):
-    """Generate a behavior tree and save as XML"""
+def generate_behavior_tree(model, tokenizer, prompt, scenario_name, output_dir, max_new_tokens=512, temperature=0.7, top_p=0.95):
     try:
         logger.info(f"Generating behavior tree for scenario: {scenario_name}")
         
-        # Get context from Pinecone
         results = retrieve_similar_content(prompt, "pdf-rag-index", top_k=3)
-        
         context = "\n\n".join([
             match.metadata['text']
             for match in results.matches
@@ -179,26 +176,17 @@ def generate_behavior_tree(
         }
       })
 
-        # Create enhanced prompt
-        enhanced_prompt = f"""[INST] 
-        
-        Use the following node types in the creation of the tree. Look at the node names and the corresponding description when determining what actions to make: 
+        formatted_messages = [
+            {**msg, 'content': msg['content'].format(
+                node_types=json.dumps(node_types),
+                context=context,
+                prompt=prompt
+            ) if msg['role'] == 'user' else msg['content']}
+            for msg in DEFAULT_MESSAGES
+        ]
 
-        {node_types}
-        
-        Using the following context about military behavior trees:
-
-        {context}
-
-        Generate a behavior tree in XML format for the following scenario:
-        {prompt}
-        
-        The output should be a valid XML behavior tree. 
-        
-        [/INST]"""
-        
-        # Generate response
-        inputs = tokenizer(enhanced_prompt, return_tensors="pt").to(model.device)
+        formatted_prompt = format_chat_prompt(formatted_messages)        
+        inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
         
         with torch.no_grad():
             outputs = model.generate(
@@ -211,11 +199,8 @@ def generate_behavior_tree(
         
         response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         response = response[len(tokenizer.decode(inputs.input_ids[0], skip_special_tokens=True)):]
-        
-        # Extract and format XML
         xml_content = extract_xml_from_response(response)
         
-        # Save XML file
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         xml_filename = f"{scenario_name}_{timestamp}.xml"
         xml_path = os.path.join(output_dir, "xml", xml_filename)
@@ -224,13 +209,12 @@ def generate_behavior_tree(
         with open(xml_path, 'w', encoding='utf-8') as f:
             f.write(xml_content)
         
-        # Save metadata
         metadata = {
             "timestamp": timestamp,
             "scenario": scenario_name,
             "prompt": prompt,
             "context_chunks": len(results.matches),
-            "context_used": context[:500] + "..." if len(context) > 500 else context,  # Save truncated context
+            "context_used": context[:500] + "..." if len(context) > 500 else context,
             "generation_params": {
                 "max_new_tokens": max_new_tokens,
                 "temperature": temperature,
@@ -244,72 +228,10 @@ def generate_behavior_tree(
         with open(metadata_path, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2)
             
-        logger.info(f"Generated behavior tree saved to {xml_path}")
         return xml_path
 
     except Exception as e:
         logger.error(f"Error generating behavior tree: {str(e)}")
-        raise
-
-def process_scenarios(scenarios_file, output_dir):
-    """Process multiple scenarios from a JSON file"""
-    load_dotenv()
-    
-    try:
-        # Load scenarios
-        logger.info(f"Loading scenarios from {scenarios_file}")
-        with open(scenarios_file, 'r') as f:
-            data = json.load(f)
-            scenarios = data.get('scenarios', [])  # Expect scenarios under 'scenarios' key
-            
-        if not scenarios:
-            logger.error("No scenarios found in input file")
-            return []
-            
-        logger.info(f"Found {len(scenarios)} scenarios to process")
-            
-        # Initialize model
-        model, tokenizer = initialize_model(
-            os.getenv('BASE_MODEL_PATH'),
-            os.getenv('LORA_ADAPTER_PATH')
-        )
-        
-        # Create output directories
-        os.makedirs(output_dir, exist_ok=True)
-        os.makedirs(os.path.join(output_dir, "xml"), exist_ok=True)
-        os.makedirs(os.path.join(output_dir, "metadata"), exist_ok=True)
-        
-        # Process each scenario
-        generated_files = []
-        for i, scenario in enumerate(scenarios, 1):
-            name = scenario.get('name', f'scenario_{i}')
-            prompt = scenario.get('prompt', '')
-            
-            if not prompt:
-                logger.warning(f"Skipping scenario '{name}': no prompt provided")
-                continue
-                
-            logger.info(f"Processing scenario {i}/{len(scenarios)}: {name}")
-            try:
-                xml_path = generate_behavior_tree(
-                    model,
-                    tokenizer,
-                    prompt,
-                    name,
-                    output_dir
-                )
-                generated_files.append(xml_path)
-                logger.info(f"Successfully processed scenario {name}")
-                
-            except Exception as e:
-                logger.error(f"Error processing scenario '{name}': {str(e)}")
-                continue
-        
-        logger.info(f"Completed processing {len(generated_files)} out of {len(scenarios)} scenarios")
-        return generated_files
-        
-    except Exception as e:
-        logger.error(f"Fatal error: {str(e)}")
         raise
 
 if __name__ == "__main__":
